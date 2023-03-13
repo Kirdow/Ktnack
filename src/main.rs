@@ -106,7 +106,7 @@ fn load_code(path: &str) -> Vec<String> {
         }
     }
 
-    let mut code: Vec<String> = text.trim_start().split(" ").map(String::from).collect();
+    let mut code: Vec<String> = text.trim_start().split(" ").map(|p| p.trim()).filter(|p| !p.is_empty()).map(String::from).collect();
     let mut result: Vec<String> = Vec::new();
 
     code.reverse();
