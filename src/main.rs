@@ -159,7 +159,7 @@ impl Display for Runtime {
 fn main() {
     let mut runtime = Runtime::new("code.ktnck");
     let mut i = 0;
-    let max_iter = 100;
+    let max_iter = 32768;
     debugln!("Start {}", runtime);
     while runtime.next() {
         i += 1;
@@ -255,6 +255,18 @@ impl Runtime {
                     return self.push_loop();
                 } else if s == "repeat" {
                     return self.sym_repeat();
+                } else if s == ">" {
+                    return self.sym_gt();
+                } else if s == ">=" {
+                    return self.sym_gte();
+                } else if s == "<" {
+                    return self.sym_lt();
+                } else if s == "<=" {
+                    return self.sym_lte();
+                } else if s == "==" {
+                    return self.sym_eq();
+                } else if s == "!=" {
+                    return self.sym_neq();
                 } else {
                     return false;
                 }
@@ -387,6 +399,90 @@ impl Runtime {
             }
         } else {
             println!("Unexpected (repeat) type: {}", (a));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_gt(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x > y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (>) types: {:?}", (a, b));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_lt(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x < y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (<) types: {:?}", (a, b));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_gte(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x >= y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (>=) types: {:?}", (a, b));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_lte(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x <= y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (<=) types: {:?}", (a, b));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_eq(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x == y { 1.0 } else { 0.0 }));
+        } else if let (LValueType::Text(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(0.0));
+        } else if let (LValueType::Number(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(0.0));
+        } else if let (LValueType::Text(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if *x == *y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (==) types: {:?}", (a, b));
+            return false;
+        }
+
+        return true;
+    }
+
+    fn sym_neq(&mut self) -> bool {
+        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if x != y { 1.0 } else { 0.0 }));
+        } else if let (LValueType::Text(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(1.0));
+        } else if let (LValueType::Number(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(1.0));
+        } else if let (LValueType::Text(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValueType::Number(if *x != *y { 1.0 } else { 0.0 }));
+        } else {
+            println!("Unexpected (!=) types: {:?}", (a, b));
             return false;
         }
 
