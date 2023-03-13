@@ -1,9 +1,12 @@
 #![allow(unused)]
 
+mod utils;
+
 use std::fmt::Display;
 use std::io::{BufReader, BufRead};
 use std::fs::File;
 use std::collections::HashMap;
+use utils::*;
 
 pub enum LValueType {
     Number(f32),
@@ -132,6 +135,8 @@ fn load_code(path: &str) -> Vec<String> {
 struct Runtime {
     code: Vec<String>,
     stack: Vec<LValueType>,
+    ptr: u64,
+    loops: Vec<u64>,
 }
 
 impl Runtime {
@@ -139,13 +144,15 @@ impl Runtime {
         Self {
             code: load_code(path),
             stack: Vec::new(),
+            ptr: 0,
+            loops: Vec::new(),
         }
     }
 }
 
 impl Display for Runtime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Runtime(code:{:?},stack:{:?})", self.code, self.stack)
+        write!(f, "Runtime(code:{:?},stack:{:?},ptr:{},loops:{:?})", self.code, self.stack, self.ptr, self.loops)
     }
 }
 
@@ -153,24 +160,76 @@ fn main() {
     let mut runtime = Runtime::new("code.ktnck");
     let mut i = 0;
     let max_iter = 100;
+    debugln!("Start {}", runtime);
     while runtime.next() {
         i += 1;
 
+        debugln!("Iter({}) {}({}) {}", i, runtime.ptr, runtime.get(), runtime);
         if i > max_iter {
             println!("Max Iter Reached : {}", max_iter);
             break;
         }
     }
+    debugln!("End {}", runtime);
 }
 
 impl Runtime {
+    fn get(&self) -> LValueType {
+        let index = ((self.code.len() as u64).wrapping_sub(self.ptr).wrapping_sub(1)) as usize;
+        if index >= self.code.len() {
+            return LValueType::None;
+        }
+
+        let value = self.code.get(index);
+        if let Option::None = value {
+            return LValueType::None;
+        }
+
+        let value = value.unwrap();
+
+        if value.starts_with("\"") && value.ends_with("\"") {
+            return LValueType::Text((value[1..value.len() - 1]).to_string());
+        } else if let Ok(f) = value.parse::<f32>() {
+            return LValueType::Number(f);
+        }
+
+        return LValueType::Symbol(value.to_owned());
+    }
+
+    fn get_next(&mut self) -> LValueType {
+        let value = self.get();
+        self.ptr += 1;
+        return value;
+    }
+
+    fn push_loop(&mut self) -> bool {
+        self.loops.push(self.ptr);
+        return true;
+    }
+
+    fn pop_loop(&mut self, ret: bool) -> Option<u64> {
+        if self.loops.len() == 0 {
+            return Option::None;
+        }
+
+        let val = self.loops.get(self.loops.len() - 1).unwrap().clone();
+        if ret {
+            self.ptr = val;
+        } else {
+            self.loops.pop();
+        }
+        return Some(val);
+    }
+
     fn next(&mut self) -> bool {
-        let value = stack_code::pop_one(&mut self.code);
+        let value = self.get();
         if let LValueType::None = value {
             return false;
         }
 
-        return self.use_next(value);
+        let success = self.use_next(value);
+        self.ptr += 1;
+        success
     }
 
     fn use_next(&mut self, value: LValueType) -> bool {
@@ -192,6 +251,24 @@ impl Runtime {
                     return self.sym_swap();
                 } else if s == "dup" {
                     return self.sym_dup();
+                } else if s == "loop" {
+                    return self.push_loop();
+                } else if s == "repeat" {
+                    let a = stack_runtime::pop_one(&mut self.stack);
+                    if let LValueType::Number(x) = &a {
+                        let ret = *x != 0.0;
+                        let result = self.pop_loop(ret);
+
+                        if let None = result {
+                            println!("Unexpected (repeat): No loop!");
+                            return false;
+                        }
+                    } else {
+                        println!("Unexpected (repeat) type: {}", (a));
+                        return false;
+                    }
+
+                    return true;
                 } else {
                     return false;
                 }
