@@ -88,7 +88,7 @@ mod stack_runtime {
         let first = pop_one(list);
         let second = pop_one(list);
 
-        (first, second)
+        (second, first)
     }
 }
 

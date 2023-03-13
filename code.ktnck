@@ -1,6 +1,6 @@
 10 loop
     dup log
-    1 swap sub
+    1 sub
     dup
-dup 0 swap > repeat
+dup 0 > repeat
 log
