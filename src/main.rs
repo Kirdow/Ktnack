@@ -254,21 +254,7 @@ impl Runtime {
                 } else if s == "loop" {
                     return self.push_loop();
                 } else if s == "repeat" {
-                    let a = stack_runtime::pop_one(&mut self.stack);
-                    if let LValueType::Number(x) = &a {
-                        let ret = *x != 0.0;
-                        let result = self.pop_loop(ret);
-
-                        if let None = result {
-                            println!("Unexpected (repeat): No loop!");
-                            return false;
-                        }
-                    } else {
-                        println!("Unexpected (repeat) type: {}", (a));
-                        return false;
-                    }
-
-                    return true;
+                    return self.sym_repeat();
                 } else {
                     return false;
                 }
@@ -386,6 +372,24 @@ impl Runtime {
         let a = stack_runtime::pop_one(&mut self.stack);
         self.stack.push(a.clone());
         self.stack.push(a);
+        return true;
+    }
+    
+    fn sym_repeat(&mut self) -> bool {
+        let a = stack_runtime::pop_one(&mut self.stack);
+        if let LValueType::Number(x) = &a {
+            let ret = *x != 0.0;
+            let result = self.pop_loop(ret);
+
+            if let None = result {
+                println!("Unexpected (repeat): No loop!");
+                return false;
+            }
+        } else {
+            println!("Unexpected (repeat) type: {}", (a));
+            return false;
+        }
+
         return true;
     }
 }
