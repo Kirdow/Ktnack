@@ -4,14 +4,17 @@ mod utils;
 mod ltypes;
 mod stack;
 mod src;
+mod args;
+mod cmds;
+mod base;
 
 use std::{collections::{HashMap, HashSet}, fs::File, mem::{Discriminant, discriminant}};
 use utils::*;
 use ltypes::*;
 use stack::*;
 use src::*;
-
-use std::env;
+use args::*;
+use cmds::cmd_handle_cmd;
 
 struct Runtime {
     code: Vec<LOpType>,
@@ -35,49 +38,25 @@ impl std::fmt::Display for Runtime {
     }
 }
 
-const VERSION: &str = "0.0.0";
-
-enum ArgCommand {
-    Run(String),
-    Version,
-}
-
-fn get_file_name() -> Vec<ArgCommand> {
-    let args: Vec<String> = env::args().collect();
-    let mut commands: Vec<ArgCommand> = Vec::new();
-    let mut used_commands: HashSet<Discriminant<ArgCommand>> = HashSet::new();
-    for arg in args.iter().skip(1) {
-        if arg == "--version" || arg == "-v" {
-            let value = ArgCommand::Version;
-            if !used_commands.contains(&discriminant(&value)) {
-                used_commands.insert(discriminant(&value));
-                commands.push(value);
-            }
-        } else {
-            let value = ArgCommand::Run(arg.clone());
-            if !used_commands.contains(&discriminant(&value)) {
-                used_commands.insert(discriminant(&value));
-                commands.push(value);            
-            }
-        }
-    }
-
-    return commands;
-}
-
 fn main() {
-    let commands = get_file_name();
+    let commands = get_env_arg_cmds();
     if commands.len() == 0 {
         println!("No Ktnack file specified!");
         return;
     }
 
+    let mut run_arg: Option<&String> = Option::None;
+
     for cmd in commands.iter() {
-        if let ArgCommand::Version = cmd {
-            println!("Ktnack Version: v{}", VERSION);
+        if cmd_handle_cmd(cmd) {
+            continue;
         } else if let ArgCommand::Run(file_name) = cmd {
-            run(&file_name);
+            run_arg = Option::Some(file_name);
         }
+    }
+
+    if let Option::Some(file_name) = run_arg {
+        run(file_name);
     }
 }
 
