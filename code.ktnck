@@ -2,9 +2,12 @@
     dup ""
     while swap dup 0 > do
         1 -
+        dup 3 % 0 = if
+            dup .
+        end
         swap "." +
-    repeat
+    end
     drop .
     1 -
-repeat
+end
 drop

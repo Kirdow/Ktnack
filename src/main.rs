@@ -5,17 +5,18 @@ mod ltypes;
 mod stack;
 mod src;
 
-use std::collections::HashMap;
+use std::{collections::{HashMap, HashSet}, fs::File, mem::{Discriminant, discriminant}};
 use utils::*;
 use ltypes::*;
 use stack::*;
 use src::*;
 
+use std::env;
+
 struct Runtime {
     code: Vec<LOpType>,
     stack: Vec<LValue>,
     ptr: u64,
-    loops: Vec<u64>,
 }
 
 impl Runtime {
@@ -24,19 +25,69 @@ impl Runtime {
             code: load_and_lex_code(path),
             stack: Vec::new(),
             ptr: 0,
-            loops: Vec::new(),
         }
     }
 }
 
 impl std::fmt::Display for Runtime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Runtime(code:{:?},stack:{:?},ptr:{},loops:{:?})", self.code, self.stack, self.ptr, self.loops)
+        write!(f, "Runtime(code:{:?},stack:{:?},ptr:{})", self.code, self.stack, self.ptr)
     }
 }
 
+const VERSION: &str = "0.0.0";
+
+enum ArgCommand {
+    Run(String),
+    Version,
+}
+
+fn get_file_name() -> Vec<ArgCommand> {
+    let args: Vec<String> = env::args().collect();
+    let mut commands: Vec<ArgCommand> = Vec::new();
+    let mut used_commands: HashSet<Discriminant<ArgCommand>> = HashSet::new();
+    for arg in args.iter().skip(1) {
+        if arg == "--version" || arg == "-v" {
+            let value = ArgCommand::Version;
+            if !used_commands.contains(&discriminant(&value)) {
+                used_commands.insert(discriminant(&value));
+                commands.push(value);
+            }
+        } else {
+            let value = ArgCommand::Run(arg.clone());
+            if !used_commands.contains(&discriminant(&value)) {
+                used_commands.insert(discriminant(&value));
+                commands.push(value);            
+            }
+        }
+    }
+
+    return commands;
+}
+
 fn main() {
-    let mut runtime = Runtime::new("code.ktnck");
+    let commands = get_file_name();
+    if commands.len() == 0 {
+        println!("No Ktnack file specified!");
+        return;
+    }
+
+    for cmd in commands.iter() {
+        if let ArgCommand::Version = cmd {
+            println!("Ktnack Version: v{}", VERSION);
+        } else if let ArgCommand::Run(file_name) = cmd {
+            run(&file_name);
+        }
+    }
+}
+
+fn run(file_name: &String) {
+    if !file_exists(file_name) {
+        println!("Ktnack file not found: {}", file_name);
+        return;
+    }
+
+    let mut runtime = Runtime::new(file_name.as_str());
     let mut i = 0;
     let max_iter = 32768;
     debugln!("Start {}", runtime);
@@ -156,8 +207,21 @@ impl Runtime {
                     false
                 }
             },
-            LOpType::Repeat(while_ip) => {
-                self.ptr = while_ip;
+            LOpType::If(block_ip) => {
+                let cond = stack_runtime::pop_one(&mut self.stack);
+                if let LValue::Number(x) = cond {
+                    if x == 0.0 {
+                        self.ptr = block_ip - 1;
+                        true
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                }
+            },
+            LOpType::End(block_ip) => {
+                self.ptr = block_ip;
                 true
             },
             LOpType::Drop => {
