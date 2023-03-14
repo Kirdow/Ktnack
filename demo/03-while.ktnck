@@ -1,0 +1,12 @@
+1 while dup 7 < do
+    dup "I: " s + .
+    dup 2 % 0 = if
+        "Even!" .
+    end
+    dup 2 % 1 = if
+        "Odd!" .
+    end
+    1 +
+    "" .
+end
+drop
