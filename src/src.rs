@@ -107,6 +107,10 @@ pub fn load_code(path: &str) -> Vec<String> {
     code.reverse();
     while let Some(value) = code.pop() {
         if value.starts_with("\"") {
+            if (value.ends_with("\"") && value.len() >= 2) {
+                result.push(value);
+                continue;
+            }
             let mut list: Vec<String> = vec![value];
             while let Some(value2) = code.pop() {
                 let end = value2.ends_with("\"");

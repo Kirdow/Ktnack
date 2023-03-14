@@ -147,7 +147,7 @@ impl Runtime {
                 let cond = stack_runtime::pop_one(&mut self.stack);
                 if let LValue::Number(x) = cond {
                     if x == 0.0 {
-                        self.ptr = repeat_ip;
+                        self.ptr = repeat_ip - 1;
                         true
                     } else {
                         true
