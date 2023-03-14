@@ -1,140 +1,19 @@
 #![allow(unused)]
 
 mod utils;
+mod ltypes;
+mod stack;
+mod src;
 
-use std::fmt::Display;
-use std::io::{BufReader, BufRead};
-use std::fs::File;
 use std::collections::HashMap;
 use utils::*;
-
-pub enum LValueType {
-    Number(f32),
-    Text(String),
-    Symbol(String),
-    None,
-}
-
-impl Clone for LValueType {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Number(x) => Self::Number(x.clone()),
-            Self::Symbol(x) => Self::Symbol(x.clone()),
-            Self::Text(x) => Self::Text(x.clone()),
-            Self::None => Self::None,
-        }
-    }
-}
-
-impl std::fmt::Display for LValueType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LValueType::None => write!(f, "_"),
-            LValueType::Text(x) => write!(f, "T\"{}\"", x),
-            LValueType::Symbol(x) => write!(f, "S{}", x),
-            LValueType::Number(x) => write!(f, "F{}", x),
-        }
-    }
-}
-
-impl std::fmt::Debug for LValueType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LValueType::None => write!(f, "_"),
-            LValueType::Text(x) => write!(f, "T\"{}\"", x),
-            LValueType::Symbol(x) => write!(f, "S{}", x),
-            LValueType::Number(x) => write!(f, "F{}", x),
-        }
-    }
-}
-
-mod stack_code {
-    use super::LValueType;
-
-    pub fn pop_one(list: &mut Vec<String>) -> LValueType {
-        let value = list.pop();
-        if let Option::None = value {
-            return LValueType::None;
-        }
-
-        let value = value.unwrap();
-
-        if value.starts_with("\"") && value.ends_with("\"") {
-            return LValueType::Text((&value[1..value.len() - 1]).to_string());
-        } else if let Ok(f) = value.parse::<f32>() {
-            return LValueType::Number(f);
-        }
-
-        return LValueType::Symbol(value);
-    }
-
-    pub fn pop_two(list: &mut Vec<String>) -> (LValueType, LValueType) {
-        let first = pop_one(list);
-        let second = pop_one(list);
-
-        (first, second)
-    }
-}
-
-mod stack_runtime {
-    use super::LValueType;
-
-    pub fn pop_one(list: &mut Vec<LValueType>) -> LValueType {
-        list.pop().unwrap_or_else(|| LValueType::None)
-    }
-
-
-    pub fn pop_two(list: &mut Vec<LValueType>) -> (LValueType, LValueType) {
-        let first = pop_one(list);
-        let second = pop_one(list);
-
-        (second, first)
-    }
-}
-
-fn load_code(path: &str) -> Vec<String> {
-    let input = File::open(path).unwrap();
-    let buffered = BufReader::new(input);
-    
-    let mut text = String::new();
-    for line in buffered.lines() {
-        match line {
-            Ok(x) => {
-                text.push_str(format!(" {}", x).as_str());
-            },
-            Err(_) => todo!(),
-        }
-    }
-
-    let mut code: Vec<String> = text.trim_start().split(" ").map(|p| p.trim()).filter(|p| !p.is_empty()).map(String::from).collect();
-    let mut result: Vec<String> = Vec::new();
-
-    code.reverse();
-    while let Some(value) = code.pop() {
-        if value.starts_with("\"") {
-            let mut list: Vec<String> = vec![value];
-            while let Some(value2) = code.pop() {
-                let end = value2.ends_with("\"");
-                list.push(value2);
-                if end {
-                    break;
-                }
-            }
-
-            result.push(list.join(" "));
-        } else {
-            result.push(value);
-        }
-    }
-
-    result.reverse();
-
-    return result;
-}
+use ltypes::*;
+use stack::*;
+use src::*;
 
 struct Runtime {
-    code: Vec<String>,
-    stack: Vec<LValueType>,
+    code: Vec<LOpType>,
+    stack: Vec<LValue>,
     ptr: u64,
     loops: Vec<u64>,
 }
@@ -142,7 +21,7 @@ struct Runtime {
 impl Runtime {
     fn new(path: &str) -> Self {
         Self {
-            code: load_code(path),
+            code: load_and_lex_code(path),
             stack: Vec::new(),
             ptr: 0,
             loops: Vec::new(),
@@ -150,7 +29,7 @@ impl Runtime {
     }
 }
 
-impl Display for Runtime {
+impl std::fmt::Display for Runtime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Runtime(code:{:?},stack:{:?},ptr:{},loops:{:?})", self.code, self.stack, self.ptr, self.loops)
     }
@@ -173,57 +52,67 @@ fn main() {
     debugln!("End {}", runtime);
 }
 
+
+
 impl Runtime {
-    fn get(&self) -> LValueType {
-        let index = ((self.code.len() as u64).wrapping_sub(self.ptr).wrapping_sub(1)) as usize;
+    fn idx(&self, ip: u64) -> Option<u64> {
+        let index = ((self.code.len() as u64).wrapping_sub(ip).wrapping_sub(1)) as usize;
         if index >= self.code.len() {
-            return LValueType::None;
+            return Option::None;
         }
 
+        return Option::Some(index as u64);        
+    }
+
+    fn is_sym(&self, ip: u64, sym: LOpType) -> Option<bool> {
+        let index = self.idx(self.ptr);
+        if let None = index {
+            return None;
+        }
+
+        let index = index.unwrap() as usize;
         let value = self.code.get(index);
         if let Option::None = value {
-            return LValueType::None;
+            return None;
         }
 
         let value = value.unwrap();
-
-        if value.starts_with("\"") && value.ends_with("\"") {
-            return LValueType::Text((value[1..value.len() - 1]).to_string());
-        } else if let Ok(f) = value.parse::<f32>() {
-            return LValueType::Number(f);
+        match value {
+            LOpType::Push(_) => {
+                return None;
+            },
+            _ => {
+                return Some(std::mem::discriminant(&sym) == std::mem::discriminant(value));
+            }
         }
 
-        return LValueType::Symbol(value.to_owned());
     }
 
-    fn get_next(&mut self) -> LValueType {
+    fn get(&self) -> LOpType {
+        let index = self.idx(self.ptr);
+        if let None = index {
+            return LOpType::Nop;
+        }
+
+        let index = index.unwrap() as usize;
+
+        let value = self.code.get(index);
+        if let Option::None = value {
+            return LOpType::Nop;
+        }
+
+        return value.unwrap().clone();
+    }
+
+    fn get_next(&mut self) -> LOpType {
         let value = self.get();
         self.ptr += 1;
         return value;
     }
 
-    fn push_loop(&mut self) -> bool {
-        self.loops.push(self.ptr);
-        return true;
-    }
-
-    fn pop_loop(&mut self, ret: bool) -> Option<u64> {
-        if self.loops.len() == 0 {
-            return Option::None;
-        }
-
-        let val = self.loops.get(self.loops.len() - 1).unwrap().clone();
-        if ret {
-            self.ptr = val;
-        } else {
-            self.loops.pop();
-        }
-        return Some(val);
-    }
-
     fn next(&mut self) -> bool {
         let value = self.get();
-        if let LValueType::None = value {
+        if let LOpType::Nop = value {
             return false;
         }
 
@@ -232,68 +121,65 @@ impl Runtime {
         success
     }
 
-    fn use_next(&mut self, value: LValueType) -> bool {
-        match value {
-            LValueType::Symbol(s) => {
-                if s == "add" {
-                    return self.sym_add();
-                } else if s == "sub" {
-                    return self.sym_sub();
-                } else if s == "mul" {
-                    return self.sym_mul();
-                } else if s == "div" {
-                    return self.sym_div();
-                } else if s == "mod" {
-                    return self.sym_mod();
-                } else if s == "log" {
-                    return self.sym_log();
-                } else if s == "swap" {
-                    return self.sym_swap();
-                } else if s == "dup" {
-                    return self.sym_dup();
-                } else if s == "loop" {
-                    return self.push_loop();
-                } else if s == "repeat" {
-                    return self.sym_repeat();
-                } else if s == ">" {
-                    return self.sym_gt();
-                } else if s == ">=" {
-                    return self.sym_gte();
-                } else if s == "<" {
-                    return self.sym_lt();
-                } else if s == "<=" {
-                    return self.sym_lte();
-                } else if s == "==" {
-                    return self.sym_eq();
-                } else if s == "!=" {
-                    return self.sym_neq();
+    fn use_next(&mut self, value: LOpType) -> bool {
+
+        return match value {
+            LOpType::Add => self.sym_add(),
+            LOpType::Sub => self.sym_sub(),
+            LOpType::Mul => self.sym_mul(),
+            LOpType::Div => self.sym_div(),
+            LOpType::Mod => self.sym_mod(),
+            LOpType::Log => self.sym_log(),
+            LOpType::Swap => self.sym_swap(),
+            LOpType::Dup => self.sym_dup(),
+            LOpType::Greater => self.sym_gt(),
+            LOpType::GreaterEqual => self.sym_gte(),
+            LOpType::Less => self.sym_lt(),
+            LOpType::LessEqual => self.sym_lte(),
+            LOpType::Equal => self.sym_eq(),
+            LOpType::NotEqual => self.sym_neq(),
+            LOpType::Push(x) => {
+                self.stack.push(x);
+                true
+            },
+            LOpType::While => true,
+            LOpType::Do(repeat_ip) => {
+                let cond = stack_runtime::pop_one(&mut self.stack);
+                if let LValue::Number(x) = cond {
+                    if x == 0.0 {
+                        self.ptr = repeat_ip;
+                        true
+                    } else {
+                        true
+                    }
                 } else {
-                    return false;
+                    false
                 }
             },
-            _ => {
-                self.stack.push(value);
-            },
-        }
+            LOpType::Repeat(while_ip) => {
+                self.ptr = while_ip;
+                true
+            }
+            _ => false,
+        };
 
-        return true;
     }
 
     fn sym_add(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
 
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x + y;
-            self.stack.push(LValueType::Number(z));
-        } else if let (LValueType::Text(x), LValueType::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(z));
+        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValueType::Text(z));
-        } else if let (LValueType::Number(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Text(z));
+        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValueType::Text(z));
-        } else if let (LValueType::Text(x), LValueType::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Text(z));
+        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValueType::Text(z));
+            self.stack.push(LValue::Text(z));
         } else {
             println!("Error (add) types: {:?}", (a, b));
             return false;
@@ -305,9 +191,9 @@ impl Runtime {
     fn sym_sub(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
 
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x - y;
-            self.stack.push(LValueType::Number(z));
+            self.stack.push(LValue::Number(z));
         } else {
             println!("Error (sub) types: {:?}", (a, b));
             return false;
@@ -319,9 +205,9 @@ impl Runtime {
     fn sym_mul(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
 
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x * y;
-            self.stack.push(LValueType::Number(z));
+            self.stack.push(LValue::Number(z));
         } else {
             println!("Error (mul) types: {:?}", (a, b));
             return false;
@@ -333,9 +219,9 @@ impl Runtime {
     fn sym_div(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
 
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x / y;
-            self.stack.push(LValueType::Number(z));
+            self.stack.push(LValue::Number(z));
         } else {
             println!("Error (div) types: {:?}", (a, b));
             return false;
@@ -347,9 +233,9 @@ impl Runtime {
     fn sym_mod(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
 
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x % y;
-            self.stack.push(LValueType::Number(z));
+            self.stack.push(LValue::Number(z));
         } else {
             println!("Error (mod) types: {:?}", (a, b));
             return false;
@@ -361,9 +247,9 @@ impl Runtime {
     fn sym_log(&mut self) -> bool {
         let a = stack_runtime::pop_one(&mut self.stack);
 
-        if let LValueType::Number(x) = &a {
+        if let LValue::Number(x) = &a {
             println!("{}", x);
-        } else if let LValueType::Text(x) = &a {
+        } else if let LValue::Text(x) = &a {
             println!("{}", x);
         } else {
             println!("Error (log) type: {:?}", a);
@@ -375,8 +261,8 @@ impl Runtime {
 
     fn sym_swap(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        self.stack.push(a);
         self.stack.push(b);
+        self.stack.push(a);
         return true;
     }
 
@@ -388,8 +274,8 @@ impl Runtime {
     }
     
     fn sym_repeat(&mut self) -> bool {
-        let a = stack_runtime::pop_one(&mut self.stack);
-        if let LValueType::Number(x) = &a {
+        /*let a = stack_runtime::pop_one(&mut self.stack);
+        if let LValue::Number(x) = &a {
             let ret = *x != 0.0;
             let result = self.pop_loop(ret);
 
@@ -400,15 +286,15 @@ impl Runtime {
         } else {
             println!("Unexpected (repeat) type: {}", (a));
             return false;
-        }
+        }*/
 
-        return true;
+        return false;
     }
 
     fn sym_gt(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x > y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x > y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (>) types: {:?}", (a, b));
             return false;
@@ -419,8 +305,8 @@ impl Runtime {
 
     fn sym_lt(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x < y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x < y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (<) types: {:?}", (a, b));
             return false;
@@ -431,8 +317,8 @@ impl Runtime {
 
     fn sym_gte(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x >= y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x >= y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (>=) types: {:?}", (a, b));
             return false;
@@ -443,8 +329,8 @@ impl Runtime {
 
     fn sym_lte(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x <= y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x <= y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (<=) types: {:?}", (a, b));
             return false;
@@ -455,14 +341,14 @@ impl Runtime {
 
     fn sym_eq(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x == y { 1.0 } else { 0.0 }));
-        } else if let (LValueType::Text(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(0.0));
-        } else if let (LValueType::Number(x), LValueType::Text(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(0.0));
-        } else if let (LValueType::Text(x), LValueType::Text(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if *x == *y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x == y { 1.0 } else { 0.0 }));
+        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(0.0));
+        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(0.0));
+        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if *x == *y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (==) types: {:?}", (a, b));
             return false;
@@ -473,14 +359,14 @@ impl Runtime {
 
     fn sym_neq(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValueType::Number(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if x != y { 1.0 } else { 0.0 }));
-        } else if let (LValueType::Text(x), LValueType::Number(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(1.0));
-        } else if let (LValueType::Number(x), LValueType::Text(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(1.0));
-        } else if let (LValueType::Text(x), LValueType::Text(y)) = (&a, &b) {
-            self.stack.push(LValueType::Number(if *x != *y { 1.0 } else { 0.0 }));
+        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if x != y { 1.0 } else { 0.0 }));
+        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(1.0));
+        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(1.0));
+        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
+            self.stack.push(LValue::Number(if *x != *y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (!=) types: {:?}", (a, b));
             return false;
