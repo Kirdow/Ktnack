@@ -1,9 +1,6 @@
 # Ktnack
 Stack-based interpreted language made in Rust. This project is made for me to learn Rust coming from C++.
 
-# References
-Inspired by [Porth](https://gitlab.com/tsoding/porth) by [Tsoding](https://www.youtube.com/@TsodingDaily).
-
 # Build & Run
 Uses only core cargo crates to my knowledge.<br>
 Build using this command
@@ -22,3 +19,7 @@ You can also run it directly with the build like this
 ```
 cargo run -- code.ktnck
 ```
+
+# References
+Inspired by [Porth](https://gitlab.com/tsoding/porth) by [Tsoding](https://www.youtube.com/@TsodingDaily).
+
