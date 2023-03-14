@@ -37,6 +37,7 @@ pub enum LOpType {
     LessEqual,
     Equal,
     NotEqual,
+    Drop,
 }
 
 impl Clone for LValue {
@@ -70,6 +71,7 @@ impl Clone for LOpType {
             Self::LessEqual => Self::LessEqual,
             Self::Equal => Self::Equal,
             Self::NotEqual => Self::NotEqual,
+            Self::Drop => Self::Drop,
         }
     }
 }
@@ -125,6 +127,7 @@ impl std::fmt::Display for LOpType {
             LOpType::While => write!(f, "While"),
             LOpType::Do(x) => write!(f, "Do(repeat:{})", x),
             LOpType::Repeat(x) => write!(f, "Repeat(while:{})", x),
+            LOpType::Drop => write!(f, "Drop"),
         }
     }
 }
@@ -151,6 +154,7 @@ impl std::fmt::Debug for LOpType {
             LOpType::While => write!(f, "While"),
             LOpType::Do(x) => write!(f, "Do(repeat:{})", x),
             LOpType::Repeat(x) => write!(f, "Repeat(while:{})", x),
+            LOpType::Drop => write!(f, "Drop"),
         }
     }
 }

@@ -71,6 +71,8 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     } else {
                         LOpType::Nop
                     }
+                } else if (sym == "drop") {
+                    LOpType::Drop
                 } else {
                     LOpType::Nop
                 }

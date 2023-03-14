@@ -159,6 +159,10 @@ impl Runtime {
             LOpType::Repeat(while_ip) => {
                 self.ptr = while_ip;
                 true
+            },
+            LOpType::Drop => {
+                stack_runtime::pop_one(&mut self.stack);
+                true
             }
             _ => false,
         };

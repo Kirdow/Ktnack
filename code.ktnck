@@ -1,6 +1,10 @@
 10 while dup 0 > do
-    dup .
+    dup ""
+    while swap dup 0 > do
+        1 -
+        swap "." +
+    repeat
+    drop .
     1 -
-    dup
 repeat
-"End" .
+drop
