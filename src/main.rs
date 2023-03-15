@@ -7,14 +7,14 @@ mod src;
 mod args;
 mod cmds;
 mod base;
-mod runtime;
 mod compile;
+mod asm;
 
 use utils::{IS_DEBUG, file_exists};
 use args::{get_env_arg_cmds, ArgCommand};
 use cmds::cmd_handle_cmd;
-use runtime::Runtime;
-use compile::*;
+use compile::Compiler;
+use asm::*;
 
 fn main() {
     let commands = get_env_arg_cmds();
@@ -44,6 +44,6 @@ fn run(file_name: &String) {
         return;
     }
 
-    let mut runtime = Runtime::new(file_name.as_str());
-    runtime.compile();    
+    let mut compiler = Compiler::new(file_name.as_str());
+    compiler.compile();    
 }
