@@ -109,7 +109,7 @@ impl Runtime {
             LOpType::Equal => self.sym_eq(),
             LOpType::NotEqual => self.sym_neq(),
             LOpType::Push(x) => {
-                self.stack.push(x);
+                stack_runtime::push_one(&mut self.stack, &x);
                 true
             },
             LOpType::While => true,
@@ -157,16 +157,16 @@ impl Runtime {
 
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x + y;
-            self.stack.push(LValue::Number(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
         } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValue::Text(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
         } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValue::Text(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
         } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
             let z = format!("{}{}", x, y);
-            self.stack.push(LValue::Text(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
         } else {
             println!("Error (add) types: {:?}", (a, b));
             return false;
@@ -180,7 +180,7 @@ impl Runtime {
 
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x - y;
-            self.stack.push(LValue::Number(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
         } else {
             println!("Error (sub) types: {:?}", (a, b));
             return false;
@@ -194,7 +194,7 @@ impl Runtime {
 
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x * y;
-            self.stack.push(LValue::Number(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
         } else {
             println!("Error (mul) types: {:?}", (a, b));
             return false;
@@ -208,7 +208,7 @@ impl Runtime {
 
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x / y;
-            self.stack.push(LValue::Number(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
         } else {
             println!("Error (div) types: {:?}", (a, b));
             return false;
@@ -222,7 +222,7 @@ impl Runtime {
 
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
             let z = x % y;
-            self.stack.push(LValue::Number(z));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
         } else {
             println!("Error (mod) types: {:?}", (a, b));
             return false;
@@ -248,40 +248,20 @@ impl Runtime {
 
     fn sym_swap(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        self.stack.push(b);
-        self.stack.push(a);
+        stack_runtime::push_two(&mut self.stack, (&b, &a));
         return true;
     }
 
     fn sym_dup(&mut self) -> bool {
         let a = stack_runtime::pop_one(&mut self.stack);
-        self.stack.push(a.clone());
-        self.stack.push(a);
+        stack_runtime::push_two(&mut self.stack, (&a, &a));
         return true;
-    }
-    
-    fn sym_repeat(&mut self) -> bool {
-        /*let a = stack_runtime::pop_one(&mut self.stack);
-        if let LValue::Number(x) = &a {
-            let ret = *x != 0.0;
-            let result = self.pop_loop(ret);
-
-            if let None = result {
-                println!("Unexpected (repeat): No loop!");
-                return false;
-            }
-        } else {
-            println!("Unexpected (repeat) type: {}", (a));
-            return false;
-        }*/
-
-        return false;
     }
 
     fn sym_gt(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x > y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x > y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (>) types: {:?}", (a, b));
             return false;
@@ -293,7 +273,7 @@ impl Runtime {
     fn sym_lt(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x < y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x < y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (<) types: {:?}", (a, b));
             return false;
@@ -305,7 +285,7 @@ impl Runtime {
     fn sym_gte(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x >= y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x >= y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (>=) types: {:?}", (a, b));
             return false;
@@ -317,7 +297,7 @@ impl Runtime {
     fn sym_lte(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x <= y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x <= y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (<=) types: {:?}", (a, b));
             return false;
@@ -329,13 +309,13 @@ impl Runtime {
     fn sym_eq(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x == y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x == y { 1.0 } else { 0.0 }));
         } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(0.0));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(0.0));
         } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(0.0));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(0.0));
         } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if *x == *y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if *x == *y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (==) types: {:?}", (a, b));
             return false;
@@ -347,13 +327,13 @@ impl Runtime {
     fn sym_neq(&mut self) -> bool {
         let (a, b) = stack_runtime::pop_two(&mut self.stack);
         if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if x != y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x != y { 1.0 } else { 0.0 }));
         } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(1.0));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(1.0));
         } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(1.0));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(1.0));
         } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
-            self.stack.push(LValue::Number(if *x != *y { 1.0 } else { 0.0 }));
+            stack_runtime::push_one(&mut self.stack, &LValue::Number(if *x != *y { 1.0 } else { 0.0 }));
         } else {
             println!("Unexpected (!=) types: {:?}", (a, b));
             return false;

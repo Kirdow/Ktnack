@@ -1,33 +1,5 @@
 use crate::ltypes::*;
 
-pub mod stack_code {
-    use super::LValueType;
-    
-    pub fn pop_one(list: &mut Vec<String>) -> LValueType {
-        let value = list.pop();
-        if let Option::None = value {
-            return LValueType::None;
-        }
-
-        let value = value.unwrap();
-
-        if value.starts_with("\"") && value.ends_with("\"") {
-            return LValueType::Text((&value[1..value.len() - 1]).to_string());
-        } else if let Ok(f) = value.parse::<f32>() {
-            return LValueType::Number(f);
-        }
-
-        return LValueType::Symbol(value);
-    }
-
-    pub fn pop_two(list: &mut Vec<String>) -> (LValueType, LValueType) {
-        let first = pop_one(list);
-        let second = pop_one(list);
-
-        (first, second)
-    }
-}
-
 pub mod stack_runtime {
     use super::LValue;
 
@@ -41,5 +13,15 @@ pub mod stack_runtime {
         let second = pop_one(list);
 
         (second, first)
+    }
+
+    pub fn push_one(list: &mut Vec<LValue>, value: &LValue) {
+        list.push(value.to_owned());
+    }
+
+    pub fn push_two(list: &mut Vec<LValue>, values: (&LValue, &LValue)) {
+        let (first, second) = values;
+        push_one(list, first);
+        push_one(list, second);
     }
 }
