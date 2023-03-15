@@ -1,1 +1,9 @@
+# Ktnack compiler dir
 /target
+
+# Ktnack Build files
+*.obj
+*.asm
+
+# Binaries
+*.exe

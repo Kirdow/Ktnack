@@ -1,8 +1,8 @@
 10 while dup 0 > do
-    dup ""
+    dup 0
     while swap dup 0 > do
         1 -
-        swap "." +
+        swap 10 mul 1 +
     end
     drop .
     1 -

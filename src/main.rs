@@ -8,11 +8,13 @@ mod args;
 mod cmds;
 mod base;
 mod runtime;
+mod compile;
 
 use utils::{IS_DEBUG, file_exists};
 use args::{get_env_arg_cmds, ArgCommand};
 use cmds::cmd_handle_cmd;
 use runtime::Runtime;
+use compile::*;
 
 fn main() {
     let commands = get_env_arg_cmds();
@@ -43,17 +45,5 @@ fn run(file_name: &String) {
     }
 
     let mut runtime = Runtime::new(file_name.as_str());
-    let mut i = 0;
-    let max_iter = 32768;
-    debugln!("Start {}", runtime);
-    while runtime.next() {
-        i += 1;
-
-        debugln!("Iter({}) {}({}) {}", i, runtime.ptr, runtime.get(), runtime);
-        if i > max_iter {
-            println!("Max Iter Reached : {}", max_iter);
-            break;
-        }
-    }
-    debugln!("End {}", runtime);
+    runtime.compile();    
 }

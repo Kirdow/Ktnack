@@ -1,6 +1,7 @@
 use crate::ltypes::*;
 use crate::src::load_and_lex_code;
 use crate::stack::stack_runtime;
+use crate::compile::*;
 
 pub struct Runtime {
     pub code: Vec<LOpType>,
@@ -34,308 +35,199 @@ impl Runtime {
         return Option::Some(index as u64);        
     }
 
-    fn is_sym(&self, ip: u64, sym: LOpType) -> Option<bool> {
-        let index = self.idx(self.ptr);
-        if let None = index {
-            return None;
-        }
-
-        let index = index.unwrap() as usize;
-        let value = self.code.get(index);
-        if let Option::None = value {
-            return None;
-        }
-
-        let value = value.unwrap();
-        match value {
-            LOpType::Push(_) => {
-                return None;
-            },
-            _ => {
-                return Some(std::mem::discriminant(&sym) == std::mem::discriminant(value));
+    fn compile_asm(&self, file: &mut AsmFile) -> bool {
+        let mut ptr: u64 = 0;
+        let csize = self.code.len() as u64;
+        while ptr < csize {
+            let index = self.idx(ptr);
+            if let None = index {
+                return true;
             }
-        }
 
-    }
-
-    pub fn get(&self) -> LOpType {
-        let index = self.idx(self.ptr);
-        if let None = index {
-            return LOpType::Nop;
-        }
-
-        let index = index.unwrap() as usize;
-
-        let value = self.code.get(index);
-        if let Option::None = value {
-            return LOpType::Nop;
-        }
-
-        return value.unwrap().clone();
-    }
-
-    fn get_next(&mut self) -> LOpType {
-        let value = self.get();
-        self.ptr += 1;
-        return value;
-    }
-
-    pub fn next(&mut self) -> bool {
-        let value = self.get();
-        if let LOpType::Nop = value {
-            return false;
-        }
-
-        let success = self.use_next(value);
-        self.ptr += 1;
-        success
-    }
-
-    fn use_next(&mut self, value: LOpType) -> bool {
-
-        return match value {
-            LOpType::Add => self.sym_add(),
-            LOpType::Sub => self.sym_sub(),
-            LOpType::Mul => self.sym_mul(),
-            LOpType::Div => self.sym_div(),
-            LOpType::Mod => self.sym_mod(),
-            LOpType::Log => self.sym_log(),
-            LOpType::Swap => self.sym_swap(),
-            LOpType::Dup => self.sym_dup(),
-            LOpType::Greater => self.sym_gt(),
-            LOpType::GreaterEqual => self.sym_gte(),
-            LOpType::Less => self.sym_lt(),
-            LOpType::LessEqual => self.sym_lte(),
-            LOpType::Equal => self.sym_eq(),
-            LOpType::NotEqual => self.sym_neq(),
-            LOpType::Push(x) => {
-                stack_runtime::push_one(&mut self.stack, &x);
-                true
-            },
-            LOpType::While => true,
-            LOpType::Do(repeat_ip) => {
-                let cond = stack_runtime::pop_one(&mut self.stack);
-                if let LValue::Number(x) = cond {
-                    if x == 0.0 {
-                        self.ptr = repeat_ip - 1;
-                        true
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            },
-            LOpType::If(block_ip) => {
-                let cond = stack_runtime::pop_one(&mut self.stack);
-                if let LValue::Number(x) = cond {
-                    if x == 0.0 {
-                        self.ptr = block_ip - 1;
-                        true
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            },
-            LOpType::End(block_ip) => {
-                self.ptr = block_ip;
-                true
-            },
-            LOpType::Drop => {
-                stack_runtime::pop_one(&mut self.stack);
-                true
+            let index = index.unwrap() as usize;
+            let value = self.code.get(index);
+            if let Option::None = value {
+                return true;
             }
-            _ => false,
-        };
 
+            let value = value.unwrap().clone();
+
+            file.addr(ptr);
+            
+            match value {
+                LOpType::Push(x) => {
+                    match x {
+                        LValue::Number(y) => {
+                            file.title("push u64");
+                            file.code(format!("push {}", y as u64).as_str());
+                        },
+                        _ => {
+                            println!("Not implemented! Push {:?}", x);
+                        }
+                    }
+                },
+                LOpType::Add => {
+                    file.title("add");
+                    file.code("pop rax");
+                    file.code("pop rbx");
+                    file.code("add rax, rbx");
+                    file.code("push rax");
+                },
+                LOpType::Sub => {
+                    file.title("sub");
+                    file.code("pop rax");
+                    file.code("pop rbx");
+                    file.code("sub rbx, rax");
+                    file.code("push rbx");
+                },
+                LOpType::Mul => {
+                    file.title("mul");
+                    file.code("pop rax");
+                    file.code("pop rbx");
+                    file.code("mul rbx");
+                    file.code("push rax");
+                },
+                LOpType::Div => {
+                    file.title("div");
+                    file.code("xor rdx, rdx");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("div rbx");
+                    file.code("push rax");
+                },
+                LOpType::Mod => {
+                    file.title("div");
+                    file.code("xor rdx, rdx");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("div rbx");
+                    file.code("push rdx");
+                },
+                LOpType::Log => {
+                    file.title("log");
+                    file.code("pop rcx");
+                    file.code("call log");
+                },
+                LOpType::Drop => {
+                    file.title("drop");
+                    file.code("pop rax");
+                },
+                LOpType::Dup => {
+                    file.title("dup");
+                    file.code("pop rax");
+                    file.code("push rax");
+                    file.code("push rax");
+                },
+                LOpType::Swap => {
+                    file.title("swap");
+                    file.code("pop rax");
+                    file.code("pop rbx");
+                    file.code("push rax");
+                    file.code("push rbx");
+                },
+                LOpType::Greater => {
+                    file.title(">");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmovg rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::Less => {
+                    file.title("<");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmovl rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::GreaterEqual => {
+                    file.title(">=");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmovge rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::LessEqual => {
+                    file.title("<=");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmovle rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::Equal => {
+                    file.title("=");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmove rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::NotEqual => {
+                    file.title("!=");
+                    file.code("xor rcx, rcx");
+                    file.code("mov rdx, 1");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("cmp rax, rbx");
+                    file.code("cmovne rcx, rdx");
+                    file.code("push rcx");
+                },
+                LOpType::If(block_ip) => {
+                    file.title("if");
+                    file.code("pop rax");
+                    file.code("cmp rax, 0");
+                    file.code(format!("je addr_{}", block_ip).as_str());
+                },
+                LOpType::Do(block_ip) => {
+                    file.title("do");
+                    file.code("pop rax");
+                    file.code("cmp rax, 0");
+                    file.code(format!("je addr_{}", block_ip).as_str());
+                },
+                LOpType::While => {
+                    file.title("while");
+                },
+                LOpType::End(block_ip) => {
+                    file.title("end");
+                    file.code(format!("jmp addr_{}", block_ip).as_str());
+                },
+                _ => {
+                    println!("Not implemented! {:?}", value);
+                    return false;
+                }
+            }
+
+            ptr += 1;
+        }
+
+        file.addr(csize);
+
+        return true;
     }
 
-    fn sym_add(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
+    pub fn compile(&self) -> bool {
+        let mut asmfile = pre_compile("ktnckc");
 
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            let z = x + y;
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
-        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
-            let z = format!("{}{}", x, y);
-            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
-        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
-            let z = format!("{}{}", x, y);
-            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
-        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
-            let z = format!("{}{}", x, y);
-            stack_runtime::push_one(&mut self.stack, &LValue::Text(z));
-        } else {
-            println!("Error (add) types: {:?}", (a, b));
+        if !self.compile_asm(&mut asmfile) {
+            println!("Failed to create ASM file!");
             return false;
         }
 
-        return true;
-    }
-
-    fn sym_sub(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            let z = x - y;
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
-        } else {
-            println!("Error (sub) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_mul(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            let z = x * y;
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
-        } else {
-            println!("Error (mul) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_div(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            let z = x / y;
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
-        } else {
-            println!("Error (div) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_mod(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            let z = x % y;
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(z));
-        } else {
-            println!("Error (mod) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_log(&mut self) -> bool {
-        let a = stack_runtime::pop_one(&mut self.stack);
-
-        if let LValue::Number(x) = &a {
-            println!("{}", x);
-        } else if let LValue::Text(x) = &a {
-            println!("{}", x);
-        } else {
-            println!("Error (log) type: {:?}", a);
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_swap(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        stack_runtime::push_two(&mut self.stack, (&b, &a));
-        return true;
-    }
-
-    fn sym_dup(&mut self) -> bool {
-        let a = stack_runtime::pop_one(&mut self.stack);
-        stack_runtime::push_two(&mut self.stack, (&a, &a));
-        return true;
-    }
-
-    fn sym_gt(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x > y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (>) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_lt(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x < y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (<) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_gte(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x >= y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (>=) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_lte(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x <= y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (<=) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_eq(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x == y { 1.0 } else { 0.0 }));
-        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(0.0));
-        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(0.0));
-        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if *x == *y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (==) types: {:?}", (a, b));
-            return false;
-        }
-
-        return true;
-    }
-
-    fn sym_neq(&mut self) -> bool {
-        let (a, b) = stack_runtime::pop_two(&mut self.stack);
-        if let (LValue::Number(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if x != y { 1.0 } else { 0.0 }));
-        } else if let (LValue::Text(x), LValue::Number(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(1.0));
-        } else if let (LValue::Number(x), LValue::Text(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(1.0));
-        } else if let (LValue::Text(x), LValue::Text(y)) = (&a, &b) {
-            stack_runtime::push_one(&mut self.stack, &LValue::Number(if *x != *y { 1.0 } else { 0.0 }));
-        } else {
-            println!("Unexpected (!=) types: {:?}", (a, b));
+        if !post_compile(asmfile) {
+            println!("Failed to compile Ktnack program!");
             return false;
         }
 

@@ -70,7 +70,7 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     let block_ip = stack.pop().unwrap_or(-1);
                     if let LOpType::If(x) = result.get(block_ip as usize).unwrap().clone() {
                         result[block_ip as usize] = LOpType::If((ip + 1) as u64);
-                        LOpType::End(ip as u64)
+                        LOpType::End((ip + 1) as u64)
                     } else if let LOpType::Do(x) = result.get(block_ip as usize).unwrap().clone() {
                         result[block_ip as usize] = LOpType::Do((ip + 1) as u64);
                         LOpType::End(x)
