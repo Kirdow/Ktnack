@@ -1,10 +1,5 @@
-10 while dup 0 > do
-    dup 0
-    while swap dup 0 > do
-        1 -
-        swap 10 mul 1 +
-    end
-    drop .
-    1 -
+5 1 while over 0 > do
+    over *
+    swap 1 - swap
 end
-drop
+. drop

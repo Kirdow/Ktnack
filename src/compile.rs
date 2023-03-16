@@ -125,6 +125,14 @@ impl Compiler {
                     file.code("push rax");
                     file.code("push rax");
                 },
+                LOpType::Over => {
+                    file.title("over");
+                    file.code("pop rax");
+                    file.code("pop rbx");
+                    file.code("push rbx");
+                    file.code("push rax");
+                    file.code("push rbx");
+                },
                 LOpType::Swap => {
                     file.title("swap");
                     file.code("pop rax");
