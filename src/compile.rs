@@ -206,6 +206,10 @@ impl Compiler {
                     file.code("cmp rax, 0");
                     file.code(format!("je addr_{}", block_ip).as_str());
                 },
+                LOpType::Else(block_ip) => {
+                    file.title("else");
+                    file.code(format!("jmp addr_{}", block_ip).as_str());
+                },
                 LOpType::Do(block_ip) => {
                     file.title("do");
                     file.code("pop rax");

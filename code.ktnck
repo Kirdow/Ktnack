@@ -1,5 +1,11 @@
-5 1 while over 0 > do
-    over *
-    swap 1 - swap
+5 4 > if
+    10 .
+else
+    20 .
 end
-. drop
+
+5 4 < if
+    30 .    
+else
+    40 .
+end

@@ -61,6 +61,15 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                 } else if (sym == "if") {
                     stack.push(ip);
                     LOpType::If(0)
+                } else if (sym == "else") {
+                    let block_ip = stack.pop().unwrap_or(-1);
+                    if let LOpType::If(x) = result.get(block_ip as usize).unwrap().clone() {
+                        result[block_ip as usize] = LOpType::If((ip + 1) as u64);
+                        stack.push(ip);
+                        LOpType::Else(0)
+                    } else {
+                        LOpType::Nop
+                    }
                 } else if (sym == "while") {
                     stack.push(ip);
                     LOpType::While
@@ -70,10 +79,14 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     LOpType::Do(while_ip as u64)
                 } else if (sym == "end") {
                     let block_ip = stack.pop().unwrap_or(-1);
-                    if let LOpType::If(x) = result.get(block_ip as usize).unwrap().clone() {
+                    let op = result.get(block_ip as usize).unwrap();
+                    if let LOpType::If(x) = op.clone() {
                         result[block_ip as usize] = LOpType::If((ip + 1) as u64);
                         LOpType::End((ip + 1) as u64)
-                    } else if let LOpType::Do(x) = result.get(block_ip as usize).unwrap().clone() {
+                    } else if let LOpType::Else(x) = op.clone() {
+                        result[block_ip as usize] = LOpType::Else((ip + 1) as u64);
+                        LOpType::End((ip + 1) as u64)
+                    } else if let LOpType::Do(x) = op.clone() {
                         result[block_ip as usize] = LOpType::Do((ip + 1) as u64);
                         LOpType::End(x)
                     } else {
