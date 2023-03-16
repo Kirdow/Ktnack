@@ -121,83 +121,78 @@ impl Compiler {
                 },
                 LOpType::Dup => {
                     file.title("dup");
-                    file.code("pop rax");
-                    file.code("push rax");
+                    file.code("mov rax, [rsp]");
                     file.code("push rax");
                 },
                 LOpType::Over => {
                     file.title("over");
-                    file.code("pop rax");
-                    file.code("pop rbx");
-                    file.code("push rbx");
+                    file.code("mov rax, [rsp+8]");
                     file.code("push rax");
-                    file.code("push rbx");
                 },
                 LOpType::Swap => {
                     file.title("swap");
                     file.code("pop rax");
-                    file.code("pop rbx");
+                    file.code("xchg rax, [rsp]");
                     file.code("push rax");
-                    file.code("push rbx");
                 },
                 LOpType::Greater => {
                     file.title(">");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmovg rcx, rdx");
+                    file.code("setg cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::Less => {
                     file.title("<");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmovl rcx, rdx");
+                    file.code("setl cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::GreaterEqual => {
                     file.title(">=");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmovge rcx, rdx");
+                    file.code("setge cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::LessEqual => {
                     file.title("<=");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmovle rcx, rdx");
+                    file.code("setle cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::Equal => {
                     file.title("=");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmove rcx, rdx");
+                    file.code("sete cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::NotEqual => {
                     file.title("!=");
-                    file.code("xor rcx, rcx");
-                    file.code("mov rdx, 1");
                     file.code("pop rbx");
                     file.code("pop rax");
+                    file.code("xor rcx, rcx");
                     file.code("cmp rax, rbx");
-                    file.code("cmovne rcx, rdx");
+                    file.code("setne cl");
+                    file.code("movzx rcx, cl");
                     file.code("push rcx");
                 },
                 LOpType::If(block_ip) => {
