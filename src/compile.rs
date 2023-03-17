@@ -42,22 +42,31 @@ impl Compiler {
         return Option::Some(index as u64);        
     }
 
+    fn get_op_type(&self, ptr: u64) -> Option<LOpType> {
+        let index = self.idx(ptr);
+        if let None = index {
+            return None;
+        }
+
+        let index = index.unwrap() as usize;
+        let value = self.code.get(index);
+        if let None = value {
+            return None;
+        }
+
+        return Some(value.unwrap().clone());
+    }
+
     fn compile_asm(&self, file: &mut AsmFile) -> bool {
         let mut ptr: u64 = 0;
         let csize = self.code.len() as u64;
         while ptr < csize {
-            let index = self.idx(ptr);
-            if let None = index {
+            let value = self.get_op_type(ptr);
+            if let None = value {
                 return true;
             }
 
-            let index = index.unwrap() as usize;
-            let value = self.code.get(index);
-            if let Option::None = value {
-                return true;
-            }
-
-            let value = value.unwrap().clone();
+            let value = value.unwrap();
 
             file.addr(ptr);
             
@@ -65,8 +74,54 @@ impl Compiler {
                 LOpType::Push(x) => {
                     match x {
                         LValue::Number(y) => {
-                            file.title("push u64");
-                            file.code(format!("push {}", y as u64).as_str());
+                            let next_value = self.get_op_type(ptr + 1);
+                            let mut optimized = false;
+                            if let Some(next_value) = next_value {
+                                optimized = true;
+                                match next_value {
+                                    LOpType::Add => {
+                                        file.title("inline push => add");
+                                        file.code(format!("add qword [rsp], {}", y as u64).as_str());
+                                    },
+                                    LOpType::Sub => {
+                                        file.title("inline push => sub");
+                                        file.code(format!("sub qword [rsp], {}", y as u64).as_str());
+                                    },
+                                    LOpType::Mul => {
+                                        file.title("inline push => mul");
+                                        file.code(format!("mov rax, {}", y as u64).as_str());
+                                        file.code("pop rbx");
+                                        file.code("mul rbx");
+                                        file.code("push rax");
+                                    },
+                                    LOpType::Div => {
+                                        file.title("inline push => div");
+                                        file.code("xor rdx, rdx");
+                                        file.code(format!("mov rbx, {}", y as u64).as_str());
+                                        file.code("pop rax");
+                                        file.code("div rbx");
+                                        file.code("push rax");
+                                    },
+                                    LOpType::Mod => {
+                                        file.title("inline push => mod");
+                                        file.code("xor rdx, rdx");
+                                        file.code(format!("mov rbx, {}", y as u64).as_str());
+                                        file.code("pop rax");
+                                        file.code("div rbx");
+                                        file.code("push rdx");
+                                    },
+                                    _ => {
+                                        optimized = false;
+                                    },
+                                }
+                            }
+
+                            if !optimized {
+                                file.title("push u64");
+                                file.code(format!("push {}", y as u64).as_str());
+                            } else {
+                                ptr += 1;
+                            }
                         },
                         _ => {
                             println!("Not implemented! Push {:?}", x);
@@ -76,16 +131,12 @@ impl Compiler {
                 LOpType::Add => {
                     file.title("add");
                     file.code("pop rax");
-                    file.code("pop rbx");
-                    file.code("add rax, rbx");
-                    file.code("push rax");
+                    file.code("add [rsp], rax");
                 },
                 LOpType::Sub => {
                     file.title("sub");
                     file.code("pop rax");
-                    file.code("pop rbx");
-                    file.code("sub rbx, rax");
-                    file.code("push rbx");
+                    file.code("sub [rsp], rax");
                 },
                 LOpType::Mul => {
                     file.title("mul");

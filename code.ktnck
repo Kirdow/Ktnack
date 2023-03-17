@@ -1,39 +1,5 @@
-0 while dup 8 < do
-    dup @ 1000 S
-    0 while dup 8 < do
-        dup @ 1001 S
-
-        @ 1000 L
-        @ 1001 L
-        +
-        3 %
-        0 = if
-            46
-        else
-            32
-        end
-
-        @ 1000 L
-        dup 0 =
-        swap 7 =
-        + @ 1002 S
-        @ 1001 L
-        dup 0 =
-        swap 7 =
-        + @ 1002 L +
-        0 > if
-            drop 35
-        end
-
-        @ 1001 L
-        @ swap S
-
-        1 +
-    end
-    drop
-
-    @ 0 8 P
-
-    1 +
+8 while dup 0 > do
+    dup .
+    1 -
 end
 drop
