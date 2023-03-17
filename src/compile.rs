@@ -218,6 +218,44 @@ impl Compiler {
                     file.title("end");
                     file.code(format!("jmp addr_{}", block_ip).as_str());
                 },
+                LOpType::Mem => {
+                    file.title("mem u64");
+                    file.code("lea rax, [rel membuf]");
+                    file.code("push rax");
+                },
+                LOpType::Load => {
+                    file.title("load");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("mov rcx, [rax + rbx*8]");
+                    file.code("push rcx");
+                },
+                LOpType::Store => {
+                    file.title("store");
+                    file.code("pop rbx");
+                    file.code("pop rax");
+                    file.code("pop rcx");
+                    file.code("mov [rax + rbx*8], rcx");
+                },
+                LOpType::Puts(nl) => {
+                    file.title("puts");
+                    file.code("mov r12, [rsp+16]");
+                    file.lbl(1);
+                    file.code("mov rsi, [rsp+8]");
+                    file.code("lea rbx, [r12 + rsi*8]");
+                    file.code("mov cl, [rbx]");
+                    file.code("call puts");
+                    file.code("sub qword [rsp], 1");
+                    file.code("add qword [rsp+8], 1");
+                    file.code("mov rbx, [rsp]");
+                    file.code("test rbx, rbx");
+                    file.code("jg .L1");
+                    if nl {
+                        file.code("mov cl, 10");
+                        file.code("call puts");
+                    }
+                    file.code("add rsp, 24");
+                }
                 _ => {
                     println!("Not implemented! {:?}", value);
                     return false;

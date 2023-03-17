@@ -31,11 +31,23 @@ impl AsmFile {
         result.write("extern printf\n");
         result.write("segment .data\n");
         result.write("    fmt     db \"%ld\", 10, 0\n");
+        result.write("    putc    db 0, 0\n");
+        result.write("    putcf   db \"%s\", 0\n");
+        result.write("segment .bss\n");
+        result.write("    membuf  resb 640 * 1024\n");
         result.write("segment .text\n");
         result.write("log:\n");
         result.write("    sub     rsp, 32\n");
         result.write("    mov     rdx, rcx\n");
         result.write("    lea     rcx, [rel fmt]\n");
+        result.write("    call    printf\n");
+        result.write("    add     rsp, 32\n");
+        result.write("    ret\n");
+        result.write("puts:\n");
+        result.write("    sub     rsp, 32\n");
+        result.write("    mov     [rel putc], cl\n");
+        result.write("    lea     rdx, [rel putc]\n");
+        result.write("    lea     rcx, [rel putcf]\n");
         result.write("    call    printf\n");
         result.write("    add     rsp, 32\n");
         result.write("    ret\n");
@@ -64,6 +76,10 @@ impl AsmFile {
 
     pub fn addr(&mut self, ip: u64) {
         self.write(format!("addr_{}:\n", ip).as_str());
+    }
+
+    pub fn lbl(&mut self, i: u64) {
+        self.write(format!(".L{}:\n", i).as_str());
     }
 }
 

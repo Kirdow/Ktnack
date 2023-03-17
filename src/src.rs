@@ -94,6 +94,16 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     }
                 } else if (sym == "drop") {
                     LOpType::Drop
+                } else if (sym == "store" || sym == "S") {
+                    LOpType::Store
+                } else if (sym == "load" || sym == "L") {
+                    LOpType::Load
+                } else if (sym == "@") {
+                    LOpType::Mem
+                } else if (sym == "P") {
+                    LOpType::Puts(true)
+                } else if (sym == "p") {
+                    LOpType::Puts(false)
                 } else {
                     LOpType::Nop
                 }

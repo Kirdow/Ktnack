@@ -41,6 +41,10 @@ pub enum LOpType {
     Equal,
     NotEqual,
     Drop,
+    Mem,
+    Load,
+    Store,
+    Puts(bool),
 }
 
 impl Clone for LValue {
@@ -78,6 +82,10 @@ impl Clone for LOpType {
             Self::Equal => Self::Equal,
             Self::NotEqual => Self::NotEqual,
             Self::Drop => Self::Drop,
+            Self::Mem => Self::Mem,
+            Self::Load => Self::Load,
+            Self::Store => Self::Store,
+            Self::Puts(x) => Self::Puts(x.clone()),
         }
     }
 }
@@ -137,6 +145,10 @@ impl std::fmt::Display for LOpType {
             LOpType::Do(x) => write!(f, "Do(end:{})", x),
             LOpType::End(x) => write!(f, "End(block:{})", x),
             LOpType::Drop => write!(f, "Drop"),
+            LOpType::Mem => write!(f, "Mem"),
+            LOpType::Load => write!(f, "Load"),
+            LOpType::Store => write!(f, "Store"),
+            LOpType::Puts(x) => write!(f, "Puts(nl:{})", x),
         }
     }
 }
@@ -167,6 +179,10 @@ impl std::fmt::Debug for LOpType {
             LOpType::Do(x) => write!(f, "Do(end:{})", x),
             LOpType::End(x) => write!(f, "End(block:{})", x),
             LOpType::Drop => write!(f, "Drop"),
+            LOpType::Mem => write!(f, "Mem"),
+            LOpType::Load => write!(f, "Load"),
+            LOpType::Store => write!(f, "Store"),
+            LOpType::Puts(x) => write!(f, "Puts(nl:{})", x),
         }
     }
 }
