@@ -75,57 +75,11 @@ impl Compiler {
                 LOpType::Push(x) => {
                     match x {
                         LValue::Number(y) => {
-                            let next_value = self.get_op_type(ptr + 1);
-                            let mut optimized = false;
-                            if let Some(next_value) = next_value {
-                                optimized = true;
-                                match next_value {
-                                    LOpType::Add => {
-                                        file.title("inline push => add");
-                                        file.code(format!("add qword [rsp], {}", y as u64).as_str());
-                                    },
-                                    LOpType::Sub => {
-                                        file.title("inline push => sub");
-                                        file.code(format!("sub qword [rsp], {}", y as u64).as_str());
-                                    },
-                                    LOpType::Mul => {
-                                        file.title("inline push => mul");
-                                        file.code(format!("mov rax, {}", y as u64).as_str());
-                                        file.code("pop rbx");
-                                        file.code("mul rbx");
-                                        file.code("push rax");
-                                    },
-                                    LOpType::Div => {
-                                        file.title("inline push => div");
-                                        file.code("xor rdx, rdx");
-                                        file.code(format!("mov rbx, {}", y as u64).as_str());
-                                        file.code("pop rax");
-                                        file.code("div rbx");
-                                        file.code("push rax");
-                                    },
-                                    LOpType::Mod => {
-                                        file.title("inline push => mod");
-                                        file.code("xor rdx, rdx");
-                                        file.code(format!("mov rbx, {}", y as u64).as_str());
-                                        file.code("pop rax");
-                                        file.code("div rbx");
-                                        file.code("push rdx");
-                                    },
-                                    _ => {
-                                        optimized = false;
-                                    },
-                                }
-                            }
-
-                            if !optimized {
-                                file.title("push u64");
-                                file.code(format!("push {}", y as u64).as_str());
-                            } else {
-                                ptr += 1;
-                            }
+                            file.title("push u64");
+                            file.code(format!("push {}", y as u64).as_str());
                         },
                         LValue::Text(text) => {
-                            file.title(format!("str lit {} \"{}\":{}", strs.len(), text.as_str(), text.len()).as_str());
+                            file.title(format!("push str lit {} \"{}\":{}", strs.len(), text.as_str(), text.len()).as_str());
                             file.code(format!("lea rax, [rel str_{}]", strs.len()).as_str());
                             file.code("push rax");
                             file.code(format!("push {}", text.len()).as_str());
