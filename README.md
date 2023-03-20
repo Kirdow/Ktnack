@@ -10,7 +10,7 @@ How to build and use:
 cargo build
 ```
 
-**2. Compile your program (using `code.ktnack` as example).**
+**2. Compile your program (using `code.ktnck` as example).**
 ```sh
 target\debug\ktanck.exe code.ktnck
 ```
