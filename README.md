@@ -4,15 +4,18 @@ Stack-based compiled language made in Rust. This project is made for me to learn
 ## Build, Compile & Run
 Uses only core cargo crates to my knowledge.<br>
 How to build and use:
+
 1. Build the Ktnack compiler using cargo:
 ```sh
 cargo build
 ```
+
 2. Compile your program (using `code.ktnack` as example).
 ```sh
 target\debug\ktanck.exe code.ktnck
 ```
-You can also use the `build.bat` file by typing `build.bat code.ktnck`.<br>
+You can also use the `build.bat` file by typing `build.bat code.ktnck`.
+
 3. Run your compiled program.
 ```sh
 code.exe
