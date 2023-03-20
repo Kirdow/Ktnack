@@ -4,7 +4,7 @@ pub mod stack_runtime {
     use super::LValue;
 
     pub fn pop_one(list: &mut Vec<LValue>) -> LValue {
-        list.pop().unwrap_or_else(|| LValue::Number(0.0))
+        list.pop().unwrap_or_else(|| LValue::Number(0))
     }
 
 

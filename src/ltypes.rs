@@ -1,6 +1,6 @@
 
 pub enum LValueType {
-    Number(f32),
+    Number(i64),
     Text(String),
     Symbol(String),
     None
@@ -13,12 +13,12 @@ pub struct Loop {
 }
 
 pub enum LValue {
-    Number(f32),
+    Number(i64),
     Text(String),
 }
 
 pub enum LOpType {
-    Nop,
+    Nop(String),
     Push(LValue),
     Add,
     Sub,
@@ -59,7 +59,7 @@ impl Clone for LValue {
 impl Clone for LOpType {
     fn clone(&self) -> Self {
         match self {
-            Self::Nop => Self::Nop,
+            Self::Nop(x) => Self::Nop(x.clone()),
             Self::Push(x) => Self::Push(x.clone()),
             Self::Add => Self::Add,
             Self::Sub => Self::Sub,
@@ -104,7 +104,7 @@ impl Clone for LValueType {
 impl std::fmt::Display for LValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LValue::Number(x) => write!(f, "Val({:?}f)", x),
+            LValue::Number(x) => write!(f, "Val({:?})", x),
             LValue::Text(x) => write!(f, "Val(\"{:?}\")", x),
         }
     }
@@ -113,7 +113,7 @@ impl std::fmt::Display for LValue {
 impl std::fmt::Debug for LValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LValue::Number(x) => write!(f, "Val({:?}f)", x),
+            LValue::Number(x) => write!(f, "Val({:?})", x),
             LValue::Text(x) => write!(f, "Val(\"{:?}\")", x),
         }
     }
@@ -122,7 +122,7 @@ impl std::fmt::Debug for LValue {
 impl std::fmt::Display for LOpType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LOpType::Nop => write!(f, "Nop"),
+            LOpType::Nop(x) => write!(f, "Nop({})", x),
             LOpType::Add => write!(f, "Add"),
             LOpType::Sub => write!(f, "Sub"),
             LOpType::Mul => write!(f, "Mul"),
@@ -156,7 +156,7 @@ impl std::fmt::Display for LOpType {
 impl std::fmt::Debug for LOpType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LOpType::Nop => write!(f, "Nop"),
+            LOpType::Nop(x) => write!(f, "Nop({})", x),
             LOpType::Add => write!(f, "Add"),
             LOpType::Sub => write!(f, "Sub"),
             LOpType::Mul => write!(f, "Mul"),
@@ -193,7 +193,7 @@ impl std::fmt::Display for LValueType {
             LValueType::None => write!(f, "_"),
             LValueType::Text(x) => write!(f, "T\"{}\"", x),
             LValueType::Symbol(x) => write!(f, "S{}", x),
-            LValueType::Number(x) => write!(f, "F{}", x),
+            LValueType::Number(x) => write!(f, "i{}", x),
         }
     }
 }
@@ -204,7 +204,7 @@ impl std::fmt::Debug for LValueType {
             LValueType::None => write!(f, "_"),
             LValueType::Text(x) => write!(f, "T\"{}\"", x),
             LValueType::Symbol(x) => write!(f, "S{}", x),
-            LValueType::Number(x) => write!(f, "F{}", x),
+            LValueType::Number(x) => write!(f, "i{}", x),
         }
     }
 }

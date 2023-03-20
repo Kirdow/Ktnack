@@ -5,8 +5,8 @@ use crate::ltypes::*;
 pub fn convert_string_to_lvalue(s: &String) -> LValueType {
     if s.starts_with("\"") && s.ends_with("\"") {
         return LValueType::Text((s[1..s.len() - 1]).to_string());
-    } else if let Ok(f) = s.parse::<f32>() {
-        return LValueType::Number(f);
+    } else if let Ok(i) = s.parse::<i64>() {
+        return LValueType::Number(i);
     }
 
     return LValueType::Symbol(s.clone());
@@ -63,12 +63,13 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     LOpType::If(0)
                 } else if (sym == "else") {
                     let block_ip = stack.pop().unwrap_or(-1);
-                    if let LOpType::If(x) = result.get(block_ip as usize).unwrap().clone() {
+                    let result_sym = result.get(block_ip as usize).unwrap();
+                    if let LOpType::If(x) = &result_sym {
                         result[block_ip as usize] = LOpType::If((ip + 1) as u64);
                         stack.push(ip);
                         LOpType::Else(0)
                     } else {
-                        LOpType::Nop
+                        LOpType::Nop(format!("else/sym:{:?}", result_sym).to_string())
                     }
                 } else if (sym == "while") {
                     stack.push(ip);
@@ -90,7 +91,7 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                         result[block_ip as usize] = LOpType::Do((ip + 1) as u64);
                         LOpType::End(x)
                     } else {
-                        LOpType::Nop
+                        LOpType::Nop(format!("end/sym:{:?}", op).to_string())
                     }
                 } else if (sym == "drop") {
                     LOpType::Drop
@@ -105,10 +106,10 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                 } else if (sym == "p") {
                     LOpType::Puts(false)
                 } else {
-                    LOpType::Nop
+                    LOpType::Nop(format!("lex:{}", sym).to_string())
                 }
             },
-            LValueType::None => LOpType::Nop,
+            LValueType::None => LOpType::Nop(String::from("Invalid token type!")),
         };
 
         result.push(op_type);
