@@ -1,11 +1,13 @@
+"Iterating 1 - 6, checking for Odd and Even" P
 1 while dup 7 < do
-    dup 10 + .
+    "Index: " p dup .
     dup 2 % 0 = if
-        2 .
+        "Even" P
     end
     dup 2 % 1 = if
-        1 .
+        "Odd" P
     end
     1 +
 end
 drop
+"End of test!" P

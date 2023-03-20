@@ -1,0 +1,29 @@
+"Testing memory access" P
+"Test 1: Saving and reading memory" P
+
+"Saving 10 at 5" P
+10 @ 5 + S
+"Saving 7 at 3" P
+7 @ 3 + S
+
+"Loading and printing from 5: " p
+@ 5 + L .
+"Loading and printing from 3: " p
+@ 3 + L .
+
+
+"Test 2: Storing 'ABC' and printing" P
+
+"Storing A" P
+65 @ 0 + S
+
+"Storing B" P
+66 @ 1 + S
+
+"Storing C" P
+67 @ 2 + S
+
+"Printing: " p
+@ 0 + 3 P
+
+"End of test!" P

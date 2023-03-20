@@ -4,21 +4,18 @@ SET "id=%~1"
 
 IF %id%==1 (
     SET "name=01-arithmetic"
-    REM cargo run -- demo/01-arithmetic.ktnck
-    REM ktnckc
 ) ELSE IF %id%==2 (
-    set "name=02-if-statement"
-    REM cargo run -- demo/02-if-statement.ktnck
-    REM ktnckc
+    SET "name=02-if-statement"
 ) ELSE IF %id%==3 (
-    set "name=03-while"
-    REM cargo run -- demo/03-while.ktnck
-    REM ktnckc
+    SET "name=03-while"
+) ELSE IF %id%==4 (
+    SET "name=04-mem"
 ) ELSE (
     ECHO Table Of Content:
     ECHO 1 - Arithmetic
     ECHO 2 - If statement
     ECHO 3 - While
+    ECHO 4 - Memory
     GOTO:EOF
 )
 

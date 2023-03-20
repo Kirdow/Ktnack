@@ -1,7 +1,27 @@
+"This test should only have results of 'Yes'!" P
+
+"If 5 > 4;" P
 5 4 > if
-    1 .
+    "Yes" P
 end
 
+"If 5 < 4;" P
 5 4 < if
-    -1 .
+    "No" P
 end
+
+"If 5 > 4;Else;" P
+5 4 > if
+    "Yes" P
+else
+    "No" P
+end
+
+"If 5 < 4;Else;" P
+5 4 < if
+    "No" P
+else
+    "Yes" P
+end
+
+"End of test!" P
