@@ -60,6 +60,7 @@ impl Compiler {
     fn compile_asm(&self, file: &mut AsmFile) -> bool {
         let mut ptr: u64 = 0;
         let csize = self.code.len() as u64;
+        let mut strs: Vec<String> = Vec::new();
         while ptr < csize {
             let value = self.get_op_type(ptr);
             if let None = value {
@@ -122,6 +123,13 @@ impl Compiler {
                             } else {
                                 ptr += 1;
                             }
+                        },
+                        LValue::Text(text) => {
+                            file.title(format!("str lit {} \"{}\":{}", strs.len(), text.as_str(), text.len()).as_str());
+                            file.code(format!("lea rax, [rel str_{}]", strs.len()).as_str());
+                            file.code("push rax");
+                            file.code(format!("push {}", text.len()).as_str());
+                            strs.push(text);
                         },
                         _ => {
                             println!("Not implemented! Push {:?}", x);
@@ -276,24 +284,29 @@ impl Compiler {
                 },
                 LOpType::Load => {
                     file.title("load");
-                    file.code("pop rbx");
+                    file.code("xor rcx, rcx");
                     file.code("pop rax");
-                    file.code("mov rcx, [rax + rbx*8]");
+                    file.code("mov cl, [rax]");
                     file.code("push rcx");
                 },
                 LOpType::Store => {
+                    /*
+                        value address
+                     */
                     file.title("store");
-                    file.code("pop rbx");
                     file.code("pop rax");
                     file.code("pop rcx");
-                    file.code("mov [rax + rbx*8], rcx");
+                    file.code("mov [rax], cl");
                 },
                 LOpType::Puts(nl) => {
+                    /*
+                        address count
+                     */
                     file.title("puts");
-                    file.code("mov r12, [rsp+16]");
                     file.lbl(1);
+                    file.code("xor rcx, rcx");
                     file.code("mov rsi, [rsp+8]");
-                    file.code("lea rbx, [r12 + rsi*8]");
+                    file.code("lea rbx, [rsi]");
                     file.code("mov cl, [rbx]");
                     file.code("call puts");
                     file.code("sub qword [rsp], 1");
@@ -305,7 +318,7 @@ impl Compiler {
                         file.code("mov cl, 10");
                         file.code("call puts");
                     }
-                    file.code("add rsp, 24");
+                    file.code("add rsp, 16");
                 }
                 _ => {
                     println!("Not implemented! {:?}", value);
@@ -317,6 +330,14 @@ impl Compiler {
         }
 
         file.addr(csize);
+        file.write("segment .data\n");
+
+        for (idx, text) in strs.iter().enumerate() {
+            file.title(format!("str lit {} \"{}\":{}", idx, text, text.len()).as_str());
+            
+            let data = text.bytes().map(|x| x.to_string()).collect::<Vec<String>>().join(", ");
+            file.write(format!("str_{}:\n    db {}\n", idx, data).as_str());
+        }
 
         return true;
     }

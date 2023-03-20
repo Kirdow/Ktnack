@@ -1,5 +1,18 @@
-8 while dup 0 > do
-    dup .
-    1 -
-end
-drop
+5 7 +
+"5 + 7 = " p .
+
+5 7 -
+"5 - 7 = " p .
+
+7 5 *
+"7 * 5 = " p .
+
+7 5 /
+"7 / 5 = " p .
+
+7 5 %
+"7 % 5 = " p .
+
+"Post Test Cleanup Test (expecting zero and non-zero): " P
+over .
+dup .
