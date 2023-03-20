@@ -12,7 +12,7 @@ cargo build
 ```sh
 target\debug\ktanck.exe code.ktnck
 ```
-You can also use the `build.bat` file by typing `build.bat code.ktnck`
+You can also use the `build.bat` file by typing `build.bat code.ktnck`.<br>
 3. Run your compiled program.
 ```sh
 code.exe
@@ -212,5 +212,5 @@ You can define and print a string literal like this:
 ```
 "Hello, World!" P
 ```
-*Woo finally hello world!*
+*Woo finally hello world!*<br>
 This prints what you'd expect.
