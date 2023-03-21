@@ -1,19 +1,14 @@
-macro str(bool)
-    if "true" else "false" end
-end
+inc std
 
-"3 << 2 == 12: " p
-3 2 <<
-12 = str(bool) P
+"1: " write(str)
+1 str(bool) print(str)
 
-"25 >> 2 == 6: " p
-25 2 >>
-6 = str(bool) P
+"0: " write(str)
+0 str(bool) print(str)
 
-"25 & 11 == 9: " p
-25 11 &
-9 = str(bool) P
+macro @a @ 10 + end
+macro @b @ 25 + end
 
-"25 | 11 == 27: " p
-25 11 |
-27 = str(bool) P
+"@a: "      write(str)       @a      print(int)
+"@b: "      write(str)       @b      print(int)
+"@b - @a: " write(str)       @b @a - print(int)

@@ -243,19 +243,30 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
     return result;
 }
 
-pub fn load_code(path: &str) -> Vec<String> {
+fn load_code_file(path: &str) -> String {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
-    
+
     let mut text = String::new();
     for line in buffered.lines() {
         match line {
             Ok(x) => {
-                text.push_str(format!(" {}", x).as_str());
+                if x.starts_with("inc ") {
+                    let sub_text = load_code_file(format!("{}.ktnck", &x[4..]).as_str());
+                    text.push_str(format!(" {}", sub_text).as_str());
+                } else {
+                    text.push_str(format!(" {}", x).as_str());
+                }
             },
-            Err(_) => todo!(),
+            Err(_) => panic!(),
         }
     }
+
+    return text.trim_start().to_owned();
+}
+
+pub fn load_code(path: &str) -> Vec<String> {
+    let text = load_code_file(path);
 
     let mut code: Vec<String> = text.trim_start().split(" ").map(|p| p.trim()).filter(|p| !p.is_empty()).map(String::from).collect();
     let mut result: Vec<String> = Vec::new();

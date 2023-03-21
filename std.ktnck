@@ -1,0 +1,34 @@
+macro 2dup over over end
+macro str(bool) if "true" else "false" end end
+macro sizeof(str) swap drop end
+
+macro @mem @ end
+macro @io @ 90000 + end
+macro @str @ 100000 + end
+macro @int @ 110000 + end
+
+macro iprint
+    @io
+    while over 0 > do
+        over 10 %
+        48 +
+        over S
+        1 -
+        swap 10 / swap
+    end
+    @io
+    swap -
+    @io 1 + over -
+    swap p
+    drop
+end
+
+macro endl
+    10 @io S
+    @io 1 p
+end
+
+macro write(str) p end
+macro write(int) iprint end
+macro print(str) write(str) endl end
+macro print(int) write(int) endl end
