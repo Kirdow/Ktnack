@@ -95,8 +95,6 @@ pub fn post_compile(mut file: AsmFile) -> bool {
     let name = file.name.to_string();
     let file = file.close();
 
-    println!("name:{} file:{}", name.as_str(), file.as_str());
-
     println!("Building ASM...");
     let status = Command::new("nasm")
                                 .args(&["-f", "win64", "-o", format!("{}.obj", name).as_str(), format!("{}.asm", name).as_str()])

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use crate::ltypes::*;
@@ -12,21 +13,134 @@ pub fn convert_string_to_lvalue(s: &String) -> LValueType {
     return LValueType::Symbol(s.clone());
 }
 
+fn load_macros_and_expand(raw_code: Vec<LValueType>) -> Vec<LValueType> {
+    let mut macros: HashMap<String, LMacro> = HashMap::new();
+    let mut code: Vec<LValueType> = Vec::new();
+
+    fn is_macro_end(lvalue: Option<LValueType>, count: &mut i32) -> bool {
+        if let Some(lvalue) = lvalue {
+            if let LValueType::Symbol(sym) = lvalue {
+                if sym == "end" {
+                    if *count == 0 {
+                        return true;
+                    }
+                    *count -= 1;
+                } else if sym == "if" || sym == "while" {
+                    *count += 1;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    fn get_macro_text(lvalue: Option<LValueType>) -> Option<String> {
+        if let Some(lvalue) = lvalue {
+            if let LValueType::Symbol(sym) = lvalue {
+                return Option::Some(sym.to_owned());
+            }
+        }
+
+        return Option::None;
+    }
+
+    fn is_macro_start(lvalue: Option<LValueType>) -> bool {
+        if let Some(lvalue) = lvalue {
+            if let LValueType::Symbol(sym) = lvalue {
+                if sym == "macro" {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    fn clone_lvalue(lvalue: Option<&LValueType>) -> Option<LValueType> {
+        match lvalue {
+            None => None,
+            Some(value) => Some(value.to_owned()),
+        }
+    }
+
+    let mut it = raw_code.iter();
+    while let Some(item) = it.next() {
+        if !is_macro_start(Option::Some(item.clone())) {
+            code.push(item.to_owned());
+            continue;
+        }
+        
+        let next = it.next();
+        let mut macro_name: Option<String> = Option::None;
+        match get_macro_text(clone_lvalue(next)) {
+            Option::None => {
+                println!("Failed to lex macro! No name found!");
+                return code;
+            },
+            Option::Some(text) => {
+                macro_name = Option::Some(text);
+            }
+        }
+
+        let macro_name = macro_name.unwrap();
+
+        let mut body: Vec<LValueType> = Vec::new();
+        let mut success: bool = false;
+        let mut count: i32 = 0;
+        while let Some(value) = it.next() {
+            if is_macro_end(Option::Some(value.to_owned()), &mut count) {
+                let mcro = LMacro::new(&macro_name, &body);
+                macros.insert(macro_name, mcro);
+                success = true;
+                break;
+            } else {
+                body.push(value.to_owned());
+            }
+        }
+
+        if !success {
+            println!("Failed to read macro!");
+            return Vec::new();
+        }
+    }
+
+    let mut result: Vec<LValueType> = Vec::new();
+
+    let mut it = code.iter();
+    while let Some(item) = it.next() {
+        match get_macro_text(Option::Some(item.clone())) {
+            None => {
+                result.push(item.to_owned());
+            },
+            Some(text) => {
+                if let Some(mcro) = macros.get(&text) {
+                    let mut expanded = mcro.expand(&macros, 8);
+                    result.append(&mut expanded);
+                } else {
+                    result.push(item.to_owned());
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
 pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
-    let mut code = load_code(path);
-    code.reverse();
+    let code: Vec<LValueType> = load_code(path).iter().map(|x|convert_string_to_lvalue(x)).rev().collect();
+    let code = load_macros_and_expand(code);
+
     let mut result: Vec<LOpType> = Vec::new();
 
     let mut ip = 0;
 
     let mut stack: Vec<i32> = Vec::new();
 
-    for item in code.iter() {
-        let value = convert_string_to_lvalue(item);
+    for value in code.iter() {
         
         let op_type = match value {
-            LValueType::Number(x) => LOpType::Push(LValue::Number(x)),
-            LValueType::Text(x) => LOpType::Push(LValue::Text(x)),
+            LValueType::Number(x) => LOpType::Push(LValue::Number(x.clone())),
+            LValueType::Text(x) => LOpType::Push(LValue::Text(x.clone())),
             LValueType::Symbol(sym) => {
                 if sym == "add" || sym == "+" {
                     LOpType::Add

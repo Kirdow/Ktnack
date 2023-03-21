@@ -1,4 +1,6 @@
 
+use std::collections::HashMap;
+
 pub enum LValueType {
     Number(i64),
     Text(String),
@@ -45,6 +47,11 @@ pub enum LOpType {
     Load,
     Store,
     Puts(bool),
+}
+
+pub struct LMacro {
+    name: String,
+    body: Vec<LValueType>,
 }
 
 impl Clone for LValue {
@@ -238,5 +245,39 @@ impl std::fmt::Display for Loop {
 impl std::fmt::Debug for Loop {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Loop(start:{},cond:{},end:{})", self.start, self.cond, self.end)
+    }
+}
+
+impl LMacro {
+    pub fn new(name: &String, body: &Vec<LValueType>) -> Self {
+        Self {
+            name: name.to_owned(),
+            body: body.clone(),
+        }
+    }
+
+    pub fn expand(&self, macros: &HashMap<String, LMacro>, max_depth: i32) -> Vec<LValueType> {
+        let mut result: Vec<LValueType> = Vec::new();        
+        if max_depth < 0 {
+            return result;
+        }
+
+        for value in self.body.iter() {
+            match value {
+                LValueType::Symbol(sym) => {
+                    if let Some(mcro) = macros.get(sym) {
+                        let mut expanded = mcro.expand(macros, max_depth - 1);
+                        result.append(&mut expanded);
+                    } else {
+                        result.push(value.clone());
+                    }
+                },
+                _ => {
+                    result.push(value.clone());
+                }
+            }
+        }
+
+        result
     }
 }

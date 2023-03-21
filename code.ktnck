@@ -1,18 +1,24 @@
-5 7 +
-"5 + 7 = " p .
+macro iprint
+    @ 10000 +
+    while over 0 > do
+        over 10 %
+        48 +
+        over S
+        1 -
+        swap 10 / swap
+    end
+    @ 10000 +
+    swap -
+    @ 10001 + over -
+    swap p
+    drop
+end
 
-5 7 -
-"5 - 7 = " p .
+macro endl
+    10 @ 10000 + S
+    @ 10000 + 1 p
+end
 
-7 5 *
-"7 * 5 = " p .
+"Num: " p 1234 iprint "!" P
 
-7 5 /
-"7 / 5 = " p .
 
-7 5 %
-"7 % 5 = " p .
-
-"Post Test Cleanup Test (expecting zero and non-zero): " P
-over .
-dup .
