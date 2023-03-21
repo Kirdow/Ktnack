@@ -1,24 +1,19 @@
-macro iprint
-    @ 10000 +
-    while over 0 > do
-        over 10 %
-        48 +
-        over S
-        1 -
-        swap 10 / swap
-    end
-    @ 10000 +
-    swap -
-    @ 10001 + over -
-    swap p
-    drop
+macro str(bool)
+    if "true" else "false" end
 end
 
-macro endl
-    10 @ 10000 + S
-    @ 10000 + 1 p
-end
+"3 << 2 == 12: " p
+3 2 <<
+12 = str(bool) P
 
-"Num: " p 1234 iprint "!" P
+"25 >> 2 == 6: " p
+25 2 >>
+6 = str(bool) P
 
+"25 & 11 == 9: " p
+25 11 &
+9 = str(bool) P
 
+"25 | 11 == 27: " p
+25 11 |
+27 = str(bool) P

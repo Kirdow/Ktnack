@@ -123,6 +123,26 @@ impl Compiler {
                     file.code("div rbx");
                     file.code("push rdx");
                 },
+                LOpType::Shl => {
+                    file.title("shift left");
+                    file.code("pop rcx");
+                    file.code("shl qword [rsp], cl");
+                },
+                LOpType::Shr => {
+                    file.title("shift right");
+                    file.code("pop rcx");
+                    file.code("shr qword [rsp], cl");
+                },
+                LOpType::Bor => {
+                    file.title("bitwise or");
+                    file.code("pop rax");
+                    file.code("or [rsp], rax");
+                },
+                LOpType::Band => {
+                    file.title("bitwise and");
+                    file.code("pop rax");
+                    file.code("and [rsp], rax");
+                },
                 LOpType::Log => {
                     file.title("log");
                     file.code("pop rcx");

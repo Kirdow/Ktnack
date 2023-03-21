@@ -152,6 +152,14 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     LOpType::Div
                 } else if (sym == "mod" || sym == "%") {
                     LOpType::Mod
+                } else if (sym == "shl" || sym == "<<") {
+                    LOpType::Shl
+                } else if (sym == "shr" || sym == ">>") {
+                    LOpType::Shr
+                } else if (sym == "bor" || sym == "|") {
+                    LOpType::Bor
+                } else if (sym == "band" || sym == "&") {
+                    LOpType::Band
                 } else if (sym == "log" || sym == ".") {
                     LOpType::Log
                 } else if (sym == "swap" || sym == "s") {
