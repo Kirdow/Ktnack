@@ -2,10 +2,15 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use crate::ltypes::*;
+use crate::strings::*;
 
 pub fn convert_string_to_lvalue(s: &String) -> LValueType {
     if s.starts_with("\"") && s.ends_with("\"") {
         return LValueType::Text((s[1..s.len() - 1]).to_string());
+    } else if s.starts_with("'") && s.ends_with("'") {
+        if let Some(val) = s.chars().nth(1) {
+            return LValueType::Char(val as i64);
+        }
     } else if let Ok(i) = s.parse::<i64>() {
         return LValueType::Number(i);
     }
@@ -231,6 +236,9 @@ pub fn load_and_lex_code(path: &str) -> Vec<LOpType> {
                     LOpType::Nop(format!("lex:{}", sym).to_string())
                 }
             },
+            LValueType::Char(x) => {
+                LOpType::Push(LValue::Number(x.clone()))
+            },
             LValueType::None => LOpType::Nop(String::from("Invalid token type!")),
         };
 
@@ -273,24 +281,7 @@ pub fn load_code(path: &str) -> Vec<String> {
 
     code.reverse();
     while let Some(value) = code.pop() {
-        if value.starts_with("\"") {
-            if (value.ends_with("\"") && value.len() >= 2) {
-                result.push(value);
-                continue;
-            }
-            let mut list: Vec<String> = vec![value];
-            while let Some(value2) = code.pop() {
-                let end = value2.ends_with("\"");
-                list.push(value2);
-                if end {
-                    break;
-                }
-            }
-
-            result.push(list.join(" "));
-        } else {
-            result.push(value);
-        }
+        result.push(fetch_string(&value, &mut code));
     }
 
     result.reverse();

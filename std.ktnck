@@ -24,7 +24,7 @@ macro iprint
 end
 
 macro endl
-    10 @io S
+    '\n' @io S
     @io 1 p
 end
 

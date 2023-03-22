@@ -4,6 +4,7 @@ use std::collections::HashMap;
 pub enum LValueType {
     Number(i64),
     Text(String),
+    Char(i64),
     Symbol(String),
     None
 }
@@ -111,6 +112,7 @@ impl Clone for LValueType {
             Self::Number(x) => Self::Number(x.clone()),
             Self::Symbol(x) => Self::Symbol(x.clone()),
             Self::Text(x) => Self::Text(x.clone()),
+            Self::Char(x) => Self::Char(x.clone()),
             Self::None => Self::None,
         }
     }
@@ -216,6 +218,7 @@ impl std::fmt::Display for LValueType {
             LValueType::None => write!(f, "_"),
             LValueType::Text(x) => write!(f, "T\"{}\"", x),
             LValueType::Symbol(x) => write!(f, "S{}", x),
+            LValueType::Char(x) => write!(f, "C{}", x),
             LValueType::Number(x) => write!(f, "i{}", x),
         }
     }
@@ -227,6 +230,7 @@ impl std::fmt::Debug for LValueType {
             LValueType::None => write!(f, "_"),
             LValueType::Text(x) => write!(f, "T\"{}\"", x),
             LValueType::Symbol(x) => write!(f, "S{}", x),
+            LValueType::Char(x) => write!(f, "C{}", x),
             LValueType::Number(x) => write!(f, "i{}", x),
         }
     }

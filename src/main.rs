@@ -9,6 +9,7 @@ mod cmds;
 mod base;
 mod compile;
 mod asm;
+mod strings;
 
 use utils::{IS_DEBUG, file_exists};
 use args::{get_env_arg_cmds, ArgCommand};
