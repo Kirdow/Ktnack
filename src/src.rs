@@ -273,18 +273,36 @@ fn load_code_file(path: &str) -> String {
     return text.trim_start().to_owned();
 }
 
-pub fn load_code(path: &str) -> Vec<String> {
-    let text = load_code_file(path);
+fn get_code_words(text: &String) -> Vec<String> {
+    let mut words: Vec<String> = text.trim_start()
+        .split(" ")
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .map(String::from)
+        .collect();
+    words.reverse();
+    words
+}
 
-    let mut code: Vec<String> = text.trim_start().split(" ").map(|p| p.trim()).filter(|p| !p.is_empty()).map(String::from).collect();
+fn get_code_words_and_strings(text: &String) -> Vec<String> {
+    let mut code = get_code_words(text);
     let mut result: Vec<String> = Vec::new();
 
-    code.reverse();
     while let Some(value) = code.pop() {
         result.push(fetch_string(&value, &mut code));
     }
 
     result.reverse();
 
-    return result;
+    result
+}
+
+pub fn load_code(path: &str) -> Vec<String> {
+    let text = load_code_file(path);
+
+    let code_tokens = get_code_words_and_strings(&text);
+
+    println!("Code tokens: {}", code_tokens.len());
+
+    code_tokens
 }

@@ -2,7 +2,6 @@
 
 mod utils;
 mod ltypes;
-mod stack;
 mod src;
 mod args;
 mod cmds;

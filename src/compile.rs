@@ -1,6 +1,5 @@
 use crate::ltypes::*;
 use crate::src::load_and_lex_code;
-use crate::stack::stack_runtime;
 use crate::asm::*;
 use std::path::Path;
 

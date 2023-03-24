@@ -127,54 +127,7 @@ impl std::fmt::Display for LValue {
     }
 }
 
-impl std::fmt::Debug for LValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LValue::Number(x) => write!(f, "Val({:?})", x),
-            LValue::Text(x) => write!(f, "Val(\"{:?}\")", x),
-        }
-    }
-}
-
 impl std::fmt::Display for LOpType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LOpType::Nop(x) => write!(f, "Nop({})", x),
-            LOpType::Add => write!(f, "Add"),
-            LOpType::Sub => write!(f, "Sub"),
-            LOpType::Mul => write!(f, "Mul"),
-            LOpType::Div => write!(f, "Div"),
-            LOpType::Mod => write!(f, "Mod"),
-            LOpType::Shl => write!(f, "Shl"),
-            LOpType::Shr => write!(f, "Shr"),
-            LOpType::Bor => write!(f, "Bor"),
-            LOpType::Band => write!(f, "Band"),
-            LOpType::Log => write!(f, "Log"),
-            LOpType::Swap => write!(f, "Swap"),
-            LOpType::Dup => write!(f, "Dup"),
-            LOpType::Over => write!(f, "Over"),
-            LOpType::Greater => write!(f, "Greater"),
-            LOpType::Less => write!(f, "Less"),
-            LOpType::GreaterEqual => write!(f, "GreaterEqual"),
-            LOpType::LessEqual => write!(f, "LessEqual"),
-            LOpType::Equal => write!(f, "Equal"),
-            LOpType::NotEqual => write!(f, "NotEqual"),
-            LOpType::Push(value) => write!(f, "Push({:?})", value),
-            LOpType::If(x) => write!(f, "If(block:{})", x),
-            LOpType::Else(x) => write!(f, "Else(block:{})", x),
-            LOpType::While => write!(f, "While"),
-            LOpType::Do(x) => write!(f, "Do(end:{})", x),
-            LOpType::End(x) => write!(f, "End(block:{})", x),
-            LOpType::Drop => write!(f, "Drop"),
-            LOpType::Mem => write!(f, "Mem"),
-            LOpType::Load => write!(f, "Load"),
-            LOpType::Store => write!(f, "Store"),
-            LOpType::Puts(x) => write!(f, "Puts(nl:{})", x),
-        }
-    }
-}
-
-impl std::fmt::Debug for LOpType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LOpType::Nop(x) => write!(f, "Nop({})", x),
@@ -224,50 +177,6 @@ impl std::fmt::Display for LValueType {
     }
 }
 
-impl std::fmt::Debug for LValueType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LValueType::None => write!(f, "_"),
-            LValueType::Text(x) => write!(f, "T\"{}\"", x),
-            LValueType::Symbol(x) => write!(f, "S{}", x),
-            LValueType::Char(x) => write!(f, "C{}", x),
-            LValueType::Number(x) => write!(f, "i{}", x),
-        }
-    }
-}
-
-impl Loop {
-    fn new(start: u64, cond: u64, end: u64) -> Self {
-        Self {
-            start: start,
-            cond: cond,
-            end: end,
-        }
-    }
-}
-
-impl Clone for Loop {
-    fn clone(&self) -> Self {
-        Self {
-            start: self.start,
-            cond: self.cond,
-            end: self.end,
-        }
-    }
-}
-
-impl std::fmt::Display for Loop {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Loop(start:{},cond:{},end:{})", self.start, self.cond, self.end)
-    }
-}
-
-impl std::fmt::Debug for Loop {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Loop(start:{},cond:{},end:{})", self.start, self.cond, self.end)
-    }
-}
-
 impl LMacro {
     pub fn new(name: &String, body: &Vec<LValueType>) -> Self {
         Self {
@@ -299,5 +208,23 @@ impl LMacro {
         }
 
         result
+    }
+}
+
+impl std::fmt::Debug for LValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl std::fmt::Debug for LOpType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl std::fmt::Debug for LValueType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
